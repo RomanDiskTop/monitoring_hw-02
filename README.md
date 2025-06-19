@@ -32,10 +32,7 @@ zabbix_server (Zabbix) 6.0.40
      - Настраивает доступ к PostgreSQL (pg_hba.conf)
      - Активирует конфигурацию Apache
      - Запускает и активирует службы Zabbix, PostgreSQL, Apache
-    Переменные
-    •	db_user – имя пользователя БД
-	•	db_password – пароль пользователя
-	•	db_name – имя базы данных
+
     Данный плебук является условно идемпотентным так как использует command/shell (но является безопаным)
     
     
@@ -60,6 +57,7 @@ zabbix_server (Zabbix) 6.0.40
 3. Приложите в файл README.md скриншот раздела Monitoring > Latest data для обоих хостов, где видны поступающие от агентов данные.
 ![Log](img/point_4.png)
 4. Приложите в файл README.md текст использованных команд в GitHub
+
     Установка происходила с помощью Ansible, плейбуком [zabbix_agent_playbook.yml](https://github.com/RomanDiskTop/monitoring_hw-02/blob/main/zabbix_yml/zabbix_agent_playbook.yml)
      Данный плебук является идемпотентным
 ---
