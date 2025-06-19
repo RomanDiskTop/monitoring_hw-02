@@ -23,11 +23,18 @@ zabbix_server (Zabbix) 6.0.40
 ![авторизация в админке](img/point_1.png)
 
 2. Приложите в файл README.md текст использованных команд в GitHub.
-
+```
 git clone https://github.com/RomanDiskTop/monitoring_hv-02
+```
+```
 git add *
+```
+```
 git commit -m "Добавлено решение на Задание №1"
+```
+```
 git push origin main
+```
 ---
 
 ### Задание 2 
