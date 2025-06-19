@@ -23,18 +23,22 @@ zabbix_server (Zabbix) 6.0.40
 ![авторизация в админке](img/point_1.png)
 
 2. Приложите в файл README.md текст использованных команд в GitHub.
-```
-git clone https://github.com/RomanDiskTop/monitoring_hw-02
-```
-```
-git add *
-```
-```
-git commit -m "Добавлено решение на Задание №1"
-```
-```
-git push origin main
-```
+
+    Установка происходила с помощью Ansible, плейбуком [zabbix_server_playbook.yml](https://github.com/RomanDiskTop/monitoring_hw-02/blob/main/zabbix_yml/zabbix_server_playbook.yml)
+     - Устанавливает необходимые зависимости
+     - Добавляет официальный репозиторий Zabbix
+     - Устанавливает компоненты Zabbix Server, Agent, Frontend (Apache + PHP)
+     - Настраивает PostgreSQL (создание пользователя, базы, импорт схемы)
+     - Настраивает доступ к PostgreSQL (pg_hba.conf)
+     - Активирует конфигурацию Apache
+     - Запускает и активирует службы Zabbix, PostgreSQL, Apache
+    Переменные
+    •	db_user – имя пользователя БД
+	•	db_password – пароль пользователя
+	•	db_name – имя базы данных
+    Данный плебук является условно идемпотентным так как использует command/shell (но является безопаным)
+    
+    
 ---
 
 ### Задание 2 
@@ -56,13 +60,8 @@ git push origin main
 3. Приложите в файл README.md скриншот раздела Monitoring > Latest data для обоих хостов, где видны поступающие от агентов данные.
 ![Log](img/point_4.png)
 4. Приложите в файл README.md текст использованных команд в GitHub
-```
-git commit -am "Обноление всех конф файлов и readmi"
-```
-```
-git push origin main
-```
-
+    Установка происходила с помощью Ansible, плейбуком [zabbix_agent_playbook.yml](https://github.com/RomanDiskTop/monitoring_hw-02/blob/main/zabbix_yml/zabbix_agent_playbook.yml)
+     Данный плебук является идемпотентным
 ---
 ## Задание 3 со звёздочкой*
 Установите Zabbix Agent на Windows (компьютер) и подключите его к серверу Zabbix.
