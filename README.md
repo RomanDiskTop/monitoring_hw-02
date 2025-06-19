@@ -57,10 +57,7 @@ git push origin main
 ![Log](img/point_4.png)
 4. Приложите в файл README.md текст использованных команд в GitHub
 ```
-git add *
-```
-```
-git commit -m "Добавлено решение на Задание №1"
+git commit -am "Обноление всех конф файлов и readmi"
 ```
 ```
 git push origin main
