@@ -1,0 +1,177 @@
+---
+- name: Установка и настройка Zabbix Server 6 + Agent
+  hosts: zabbix_server
+  become: true
+  vars_files:
+    - zabbix_pass.yml
+
+  tasks:
+    - name: 1. Установка зависимостей
+      apt:
+        name:
+          - wget
+          - gnupg
+          - postgresql
+          - postgresql-contrib
+          - apache2
+          - php
+          - php7.4-pgsql
+          - php-bcmath
+          - php-mbstring
+          - php-gd
+          - php-xml
+          - php-ldap
+          - php-json
+          - php-zip
+        update_cache: yes
+        state: latest
+
+    - name: 2. Добавление репозитория Zabbix
+      block:
+        - name: Скачивание пакета репозитория
+          get_url:
+            url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/debian/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_version }}+debian11_all.deb"
+            dest: /tmp/zabbix-release.deb
+            checksum: "sha256:1b5963cd8294cc462c7afe12326dc859b8e42efb9d44d0d4a5c8d54d4b37e75e"
+
+        - name: Установка репозитория
+          apt:
+            deb: /tmp/zabbix-release.deb
+            state: present
+
+        - name: Обновление кеша apt
+          apt:
+            update_cache: yes
+
+    - name: 3. Установка компонентов Zabbix
+      apt:
+        name:
+          - zabbix-server-pgsql
+          - zabbix-frontend-php
+          - zabbix-apache-conf
+          - zabbix-sql-scripts
+          - zabbix-agent
+        state: latest
+
+    - name: 4. Настройка PostgreSQL
+      block:
+        - name: Запуск PostgreSQL
+          systemd:
+            name: postgresql
+            state: started
+            enabled: yes
+
+        - name: Создание пользователя БД
+          become_user: postgres
+          postgresql_user:
+            name: "{{ db_user }}"
+            password: "{{ db_password }}"
+            role_attr_flags: "CREATEDB"
+
+        - name: Создание базы данных
+          become_user: postgres
+          postgresql_db:
+            name: "{{ db_name }}"
+            owner: "{{ db_user }}"
+            encoding: "UTF-8"
+            lc_collate: "en_US.UTF-8"
+            lc_ctype: "en_US.UTF-8"
+            template: "template0"
+
+    - name: 5. Импорт схемы Zabbix
+      become: yes
+      become_user: zabbix
+      command: >
+        zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz |
+        psql -h localhost -U "{{ db_user }}" -d "{{ db_name }}"
+      environment:
+        PGPASSWORD: "{{ db_password }}"
+
+    - name: 6. Настройка Zabbix Server
+      block:
+        - name: Настройка пароля БД в конфиге
+          lineinfile:
+            path: /etc/zabbix/zabbix_server.conf
+            regexp: '^#?DBPassword='
+            line: "DBPassword={{ db_password }}"
+            backup: yes
+          notify: restart zabbix
+
+        - name: Настройка PHP (timezone)
+          lineinfile:
+            path: /etc/php/7.4/apache2/php.ini
+            regexp: '^;?date\.timezone ='
+            line: "date.timezone = Europe/Moscow"
+            backup: yes
+          notify: restart apache
+
+    - name: 7. Настройка Zabbix Agent
+      block:
+        - name: Настройка Server в конфиге агента
+          lineinfile:
+            path: /etc/zabbix/zabbix_agentd.conf
+            regexp: '^Server='
+            line: "Server=127.0.0.1"
+            backup: yes
+          notify: restart zabbix-agent
+
+        - name: Настройка ServerActive в конфиге агента
+          lineinfile:
+            path: /etc/zabbix/zabbix_agentd.conf
+            regexp: '^ServerActive='
+            line: "ServerActive=127.0.0.1"
+            backup: yes
+          notify: restart zabbix-agent
+
+    - name: 8. Запуск и включение сервисов
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+      loop:
+        - zabbix-server
+        - zabbix-agent
+        - apache2
+      ignore_errors: yes
+
+  handlers:
+    - name: restart zabbix
+      systemd:
+        name: zabbix-server
+        state: restarted
+
+    - name: restart zabbix-agent
+      systemd:
+        name: zabbix-agent
+        state: restarted
+
+    - name: restart apache
+      systemd:
+        name: apache2
+        state: restarted
+
+    - name: restart postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+
+- name: Проверка установки
+  hosts: zabbix_server
+  tasks:
+    - name: Проверка доступности веб-интерфейса
+      uri:
+        url: "http://localhost/zabbix"
+        return_content: yes
+      register: zabbix_web
+      until: zabbix_web.status == 200
+      retries: 10
+      delay: 10
+      ignore_errors: yes
+
+    - name: Вывод информации о доступе
+      debug:
+        msg: |
+          Zabbix успешно установлен!
+          Веб-интерфейс доступен по: http://{{ ansible_host }}/zabbix
+          Логин: Admin
+          Пароль: zabbix
